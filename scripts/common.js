@@ -377,6 +377,28 @@ async function getChoices(which) {
 			repeat_id: 'hourly',
 			menuLabel: 'for an hour'
 		},
+		'before-lunch': {
+			label: 'Before Lunch',
+			repeatLabel: 'Everyday, Before Lunch',
+			time: NOW.startOf('d').add(11, 'h').add(30, 'm'),
+			timeString: 'Today',
+			repeatTime: NOW.startOf('d').add(11, 'h').add(30, 'm').format(getHourFormat(true)),
+			repeatTimeString: 'Starts Tom at',
+			repeat_id: 'daily',
+			menuLabel: 'till before lunch',
+			disabled: NOW.startOf('d').add(11, 'h').add(30, 'm').valueOf() < dayjs(),
+		},
+		'before-end-of-work': {
+			label: 'Before End of Work',
+			repeatLabel: 'Everyday, Before End of Work',
+			time: NOW.startOf('d').add(16, 'h').add(30, 'm'),
+			timeString: 'Today',
+			repeatTime: NOW.startOf('d').add(16, 'h').add(30, 'm').format(getHourFormat(true)),
+			repeatTimeString: 'Starts Tom at',
+			repeat_id: 'daily',
+			menuLabel: 'till before end of work',
+			disabled: NOW.startOf('d').add(16, 'h').add(30, 'm').valueOf() < dayjs(),
+		},
 		'today-morning': {
 			label: 'This Morning',
 			repeatLabel: '',

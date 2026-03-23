@@ -214,3 +214,13 @@ if (chrome.idle) chrome.idle.onStateChanged.addListener(async s => {
 		}
 	}
 });
+
+chrome.action.onClicked.addListener(async (tab) => {
+	if (!tab?.url) return;
+
+	const target = new URL("https://sublime.app/");
+	target.searchParams.set("url", tab.url);
+	if (tab.title) target.searchParams.set("title", tab.title);
+
+	await chrome.tabs.create({ url: target.toString() });
+});
