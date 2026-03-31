@@ -5,15 +5,12 @@
 	"version": "1.0",
 	
 	"icons": {
-		"128": "icons/ext-icon-128.png",
-		"48": "icons/ext-icon-48.png",
-		"32": "icons/ext-icon-32.png",
-		"16": "icons/ext-icon-16.png"
+		"128": "icons/logo-128.png",
+		"48": "icons/logo-48.png",
+		"32": "icons/logo-32.png",
+		"16": "icons/logo-16.png"
 	},
 	"manifest_version": 2,
-	"action": {
-		"default_title": "Add current page to Sublime"
-	},
 	"browser_action": {
 		"default_popup": "html/popup.html"
 	},
@@ -28,7 +25,7 @@
 	},
 	"offline_enabled": true,
 
-	"permissions": ["alarms", "contextMenus", "idle", "notifications", "storage", "tabs", "https://habitica.com/*"],
+	"permissions": ["alarms", "contextMenus", "idle", "notifications", "storage", "tabs", "https://habitica.com/*", "bookmarks"],
 
 	"web_accessible_resources": ["html/settings.html"],
 
@@ -70,6 +67,16 @@
 		},
 		"month": {
 			"description": "Snooze till one month from now"
-		}
+		},
+		"bookmark-1": {"description": "Open bookmark 1"},
+		"bookmark-2": {"description": "Open bookmark 2"},
+		"bookmark-3": {"description": "Open bookmark 3"},
+		"bookmark-4": {"description": "Open bookmark 4"},
+		"bookmark-5": {"description": "Open bookmark 5"},
+		"bookmark-6": {"description": "Open bookmark 6"},
+		"bookmark-7": {"description": "Open bookmark 7"},
+		"bookmark-8": {"description": "Open bookmark 8"},
+		"bookmark-9": {"description": "Open bookmark 9"},
+		"bookmark-10": {"description": "Open bookmark 10"}
 	}
 }

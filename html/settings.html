@@ -19,6 +19,22 @@
 		<h2 class="center"><span>Settings</span></h2><br>
 		<div class="input-container flex">
 			<div>
+				<h4>Interval beep</h4>
+				<p>Play a beep sound every 15 or 30 minutes.</p>
+			</div>
+			<div class="flex">
+				<div class="checkbox-wrapper">
+					<input type="checkbox" id="intervalBeepEnabled">
+					<label for="intervalBeepEnabled"><span>Enabled</span></label>
+				</div>
+				<div class="select-wrapper"><select class="direct" id="intervalBeepMinutes">
+					<option value="15">15 minutes</option>
+					<option value="30" selected>30 minutes</option>
+				</select></div>
+			</div>
+		</div>
+		<div class="input-container flex">
+			<div>
 				<h4>Morning time</h4>
 				<p>Choose the default hour to display for the morning.</p>
 			</div>

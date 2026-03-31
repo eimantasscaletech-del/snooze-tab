@@ -601,6 +601,8 @@ var SIZES = {
 const DEFAULT_OPTIONS = {
 	morning: [9, 0],
 	evening: [18, 0],
+	intervalBeepEnabled: false,
+	intervalBeepMinutes: 30,
 	hourFormat: 12,
 	icons: 'human',
 	theme: 'light',

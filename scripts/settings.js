@@ -58,12 +58,18 @@ function updateFormValues(storage) {
 			document.getElementById(o).setAttribute('data-orig-value', storage[o]);
 		}
 	});
+	if (storage.intervalBeepEnabled !== undefined) document.getElementById('intervalBeepEnabled').checked = !!storage.intervalBeepEnabled;
+	if (storage.intervalBeepMinutes !== undefined && document.querySelector(`#intervalBeepMinutes option[value="${storage.intervalBeepMinutes}"]`)) {
+		document.getElementById('intervalBeepMinutes').value = storage.intervalBeepMinutes.toString();
+		document.getElementById('intervalBeepMinutes').setAttribute('data-orig-value', storage.intervalBeepMinutes);
+	}
 	if (storage.contextMenu && storage.contextMenu.length) storage.contextMenu.forEach(o => document.getElementById(o).checked = true);
 	resizeDropdowns();
 }
 
 function addListeners() {
 	document.querySelectorAll('select').forEach(s => s.addEventListener('change', save));
+	document.getElementById('intervalBeepEnabled').addEventListener('change', save);
 	document.querySelectorAll('#contextMenu input').forEach(c => c.addEventListener('change', e => save))
 
 	document.querySelector('#shortcut .btn').addEventListener('click', toggleShortcuts);
@@ -123,6 +129,7 @@ Would you like to update ${tabsToChange.length > 1 ? 'them' : 'it'} to snooze ti
 	}
 	document.querySelectorAll('select.direct').forEach(s => options[s.id] = isNaN(s.value) ? s.value : parseInt(s.value));
 	document.querySelectorAll('select.popup').forEach(p => options.popup[p.id.replace('popup_', '')] = p.value);
+	options.intervalBeepEnabled = document.getElementById('intervalBeepEnabled').checked;
 	// handle morning evening time separately
 	['morning', 'evening'].forEach(o => options[o] = [parseInt(document.getElementById(`${o}_h`).value), parseInt(document.getElementById(`${o}_m`).value)]);
 	options.contextMenu = Array.from(document.querySelectorAll('#contextMenu input:checked')).map(c => c.id);

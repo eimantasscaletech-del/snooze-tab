@@ -1,1 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="a" gradientUnits="userSpaceOnUse" x1="50%" y1="0%" x2="50%" y2="100%"><stop offset="0%" stop-color="#f2b745"/><stop offset="100%" stop-color="#df4e75"/></linearGradient></defs><circle cx="256" cy="256" r="256" fill="url(#a)"/><g fill="#fff"><path d="M112 369c-3-1-6-3-7-5-4-4-5-12-3-18a221 221 0 0129-34 1169 1169 0 0151-57l9-11-37-1h-37v-30h56c49 0 57 0 62 2 7 2 11 6 12 12 1 8-2 15-10 23a1518 1518 0 00-52 57l-9 10-9 10-7 9c-2 2-2 2 33 2h36v33h-57c-53 0-57 0-61-2zM279 298c-6-3-9-5-11-10-3-6-2-12 2-18l19-22a4705 4705 0 0066-75c1-2-1-2-36-2h-37v-30h56l61 2c9 4 13 12 10 22-2 5-5 9-62 72l-27 30h73v32h-55l-59-1z"/></g></svg>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <radialGradient id="bg_gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+            <stop offset="0%" style="stop-color:#FF3B30; stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#A01C14; stop-opacity:1" />
+        </radialGradient>
+        <linearGradient id="inner_bg_gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#E12B20; stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#8B1812; stop-opacity:1" />
+        </linearGradient>
+        <filter id="inner_shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="0.75" result="blur"/>
+            <feOffset dx="0" dy="1" result="offsetBlur"/>
+            <feComposite in="offsetBlur" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowDifference"/>
+            <feFlood flood-color="#000000" flood-opacity="0.2" result="color"/>
+            <feComposite in="color" in2="shadowDifference" operator="in"/>
+            <feMerge>
+                <feMergeNode in="SourceGraphic"/>
+                <feMergeNode/>
+            </feMerge>
+        </filter>
+    </defs>
+
+    <rect x="0" y="0" width="128" height="128" rx="20" ry="20" fill="url(#bg_gradient)"/>
+
+    <rect x="10" y="10" width="108" height="108" rx="14" ry="14" fill="url(#inner_bg_gradient)" filter="url(#inner_shadow)" />
+
+    <path d="M64,27.5 a2.8,2.8 0 0,0 -3.6,0 l-0.9,1.35 h1.3 l0.9,-1.35 a2.8,2.8 0 0,0 2.3,0 l0.9,1.35 h1.3 l-0.9,-1.35 a2.8,2.8 0 0,0 -3.6,0 Z" fill="#EE7B70" fill-opacity="0.3" />
+
+    <text x="64" y="75" text-anchor="middle" font-family="Verdana, Geneva, sans-serif" font-weight="bold" font-size="32" fill="white" letter-spacing="-0.5">25:00</text>
+
+    <text x="108" y="30" text-anchor="end" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="white">ZZ</text>
+</svg>

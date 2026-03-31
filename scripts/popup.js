@@ -10,6 +10,10 @@ async function init() {
 	await buildChoices();
 	await buildCustomChoice();
 	await buildRepeatCustomChoice();
+	setUpPopupTabs();
+	await initHabitica();
+	startClock();
+	await initBookmarks();
 
 	document.querySelectorAll('.nap-room-btn, .settings').forEach(btn => btn.addEventListener('click', el => {
 		openExtensionTab(el.target.dataset.href);
@@ -51,7 +55,7 @@ async function init() {
 		if ((e.which === 13 || e.which === 32) && !isOverlayOpen) {
 			var selectedChoice = document.querySelector('.choice.focused');
 			if (!selectedChoice) return;
-			snooze(o.time, c)
+			selectedChoice.click();
 		}
 		if (e.keyCode === 67 && !isOverlayOpen) document.querySelector('.custom-choice').click();
 		if (e.keyCode === 67 && isOverlayOpen) document.querySelector('.overlay-close-btn').click();
@@ -70,10 +74,26 @@ async function init() {
 	}
 	if ((isInEditMode || isInDupeMode) && parent && parent.resizePopupIframe) parent.resizePopupIframe();
 }
+function setUpPopupTabs() {
+	document.querySelectorAll('.popup-tab').forEach(tab => tab.addEventListener('click', _ => togglePopupTab(tab.dataset.panel)));
+}
+function togglePopupTab(panelId) {
+	document.querySelectorAll('.popup-tab').forEach(tab => {
+		var active = tab.dataset.panel === panelId;
+		tab.classList.toggle('active', active);
+		tab.setAttribute('aria-selected', active ? 'true' : 'false');
+	});
+	document.querySelectorAll('.popup-panel').forEach(panel => {
+		var active = panel.id === panelId;
+		panel.classList.toggle('active', active);
+		panel.hidden = !active;
+	});
+}
 async function initEditMode(isDupe) {
-	document.querySelector('h3').innerText = isDupe ? 'Duplicate What?' : 'Edit What?'
+	togglePopupTab('snooze-panel');
+	document.querySelector('.panel-title').innerText = isDupe ? 'Duplicate What?' : 'Edit What?'
 	document.getElementById('targets').classList.add('hidden');
-	document.querySelectorAll('target').forEach(t => t.classList.remove('active'));
+	document.querySelectorAll('.target').forEach(t => t.classList.remove('active'));
 	document.querySelector('.footer').classList.add('hidden');
 	var t = await getSnoozedTabs(getUrlParam('tabId'));
 	if (t.repeat) document.getElementById('repeat').click();
@@ -401,8 +421,8 @@ async function buildCustomChoice() {
 	var submitButton = wrapInDiv({
 		classList: 'submit-btn disabled',
 		innerText: 'snoozz',
-		onclick: e => {
-			if (e.target.classList.contains('disabled') || !validate()) return;
+		onclick: async e => {
+			if (e.target.classList.contains('disabled') || !(await validate())) return;
 			snooze(getDateTime(), customChoice)
 		}
 	});
@@ -552,6 +572,305 @@ async function savePopupOptions() {
 		month: document.querySelector('#month select').value
 	}
 	await saveOptions(o);
+}
+
+// --- Habitica integration ---
+
+var HABITICA_APP_ID = 'snooze-tab-habitica';
+
+async function initHabitica() {
+	var o = await getOptions();
+	var userId = o && o.habiticaUserId;
+	var apiToken = o && o.habiticaApiToken;
+	if (userId && apiToken) {
+		showHabiticaTasksView();
+		fetchHabiticaTasks(userId, apiToken);
+	} else {
+		showHabiticaForm();
+	}
+	document.getElementById('habitica-save-btn').addEventListener('click', onHabiticaSave);
+	document.getElementById('habitica-disconnect-btn').addEventListener('click', onHabiticaDisconnect);
+}
+
+async function onHabiticaSave() {
+	var userId = document.getElementById('habitica-user-id').value.trim();
+	var apiToken = document.getElementById('habitica-api-token').value.trim();
+	var errorEl = document.getElementById('habitica-error');
+	errorEl.textContent = '';
+	if (!userId || !apiToken) {
+		errorEl.textContent = 'Both fields are required.';
+		return;
+	}
+	document.getElementById('habitica-save-btn').disabled = true;
+	document.getElementById('habitica-save-btn').textContent = 'Connecting...';
+	var result = await fetchHabiticaTasksData(userId, apiToken);
+	document.getElementById('habitica-save-btn').disabled = false;
+	document.getElementById('habitica-save-btn').textContent = 'Save & Load Tasks';
+	if (!result.ok) {
+		errorEl.textContent = result.error || 'Failed to connect. Check your credentials.';
+		return;
+	}
+	var o = await getOptions();
+	o.habiticaUserId = userId;
+	o.habiticaApiToken = apiToken;
+	await saveOptions(o);
+	showHabiticaTasksView();
+	renderHabiticaTasks(result.tasks);
+}
+
+async function onHabiticaDisconnect() {
+	var o = await getOptions();
+	delete o.habiticaUserId;
+	delete o.habiticaApiToken;
+	await saveOptions(o);
+	document.getElementById('habitica-user-id').value = '';
+	document.getElementById('habitica-api-token').value = '';
+	document.getElementById('habitica-error').textContent = '';
+	showHabiticaForm();
+}
+
+async function fetchHabiticaTasks(userId, apiToken) {
+	var listEl = document.getElementById('habitica-tasks-list');
+	listEl.innerHTML = '<div class="habitica-loading">Loading tasks...</div>';
+	var result = await fetchHabiticaTasksData(userId, apiToken);
+	if (!result.ok) {
+		listEl.innerHTML = `<div class="habitica-error-inline">${result.error || 'Failed to load tasks.'}</div>`;
+		return;
+	}
+	renderHabiticaTasks(result.tasks);
+}
+
+async function fetchHabiticaTasksData(userId, apiToken) {
+	try {
+		var resp = await fetch('https://habitica.com/api/v3/tasks/user', {
+			headers: {
+				'x-api-user': userId,
+				'x-api-key': apiToken,
+				'x-client': userId + '-' + HABITICA_APP_ID
+			}
+		});
+		if (resp.status === 401) return {ok: false, error: 'Invalid credentials.'};
+		if (!resp.ok) return {ok: false, error: 'API error: ' + resp.status};
+		var json = await resp.json();
+		return {ok: true, tasks: json.data || []};
+	} catch (e) {
+		return {ok: false, error: 'Network error. Check your connection.'};
+	}
+}
+
+function renderHabiticaTasks(tasks) {
+	var listEl = document.getElementById('habitica-tasks-list');
+	var countEl = document.getElementById('habitica-tasks-count');
+	var typeOrder = ['todo', 'daily', 'habit', 'reward'];
+	var sorted = tasks.slice().sort((a, b) => typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type));
+	countEl.textContent = tasks.length + ' task' + (tasks.length !== 1 ? 's' : '');
+	if (!sorted.length) {
+		listEl.innerHTML = '<div class="habitica-empty">No tasks found.</div>';
+		return;
+	}
+	listEl.innerHTML = '';
+	var currentType = null;
+	sorted.forEach(task => {
+		if (task.type !== currentType) {
+			currentType = task.type;
+			var header = document.createElement('div');
+			header.className = 'habitica-type-header';
+			header.textContent = task.type.charAt(0).toUpperCase() + task.type.slice(1) + 's';
+			listEl.appendChild(header);
+		}
+		var item = document.createElement('div');
+		item.className = 'habitica-task-item habitica-task-' + task.type;
+		item.setAttribute('data-task-id', task.id);
+		item.title = 'Click to start Pomodoro';
+		item.style.cursor = 'pointer';
+		if (task.type === 'daily' && task.isDue === false) item.classList.add('habitica-task-done');
+		var title = document.createElement('span');
+		title.className = 'habitica-task-text';
+		title.textContent = task.text;
+		item.appendChild(title);
+		if (task.notes) {
+			var notes = document.createElement('span');
+			notes.className = 'habitica-task-notes';
+			notes.textContent = task.notes;
+			item.appendChild(notes);
+		}
+		item.addEventListener('click', _ => openPomodoro(task.id, task.text));
+		listEl.appendChild(item);
+	});
+	initPomodoroBar();
+}
+
+function showHabiticaForm() {
+	document.getElementById('habitica-credentials-form').classList.remove('hidden');
+	document.getElementById('habitica-tasks-view').classList.add('hidden');
+}
+
+function showHabiticaTasksView() {
+	document.getElementById('habitica-credentials-form').classList.add('hidden');
+	document.getElementById('habitica-tasks-view').classList.remove('hidden');
+}
+
+// --- Clock ---
+
+function startClock() {
+	var el = document.getElementById('popup-clock');
+	var tick = _ => {
+		var now = dayjs();
+		el.textContent = now.format(getHourFormat(true));
+	};
+	tick();
+	setInterval(tick, 1000);
+}
+
+// --- Pomodoro ---
+
+var pomodoroState = {taskId: null, taskText: '', seconds: 25 * 60, running: false, interval: null};
+
+function initPomodoroBar() {
+	document.getElementById('pomodoro-start-btn').addEventListener('click', togglePomodoro);
+	document.getElementById('pomodoro-reset-btn').addEventListener('click', resetPomodoro);
+	document.getElementById('pomodoro-close-btn').addEventListener('click', closePomodoro);
+}
+
+function openPomodoro(taskId, taskText) {
+	if (pomodoroState.taskId !== taskId) {
+		resetPomodoro();
+		pomodoroState.taskId = taskId;
+		pomodoroState.taskText = taskText;
+		pomodoroState.seconds = 25 * 60;
+	}
+	document.getElementById('pomodoro-task-label').textContent = taskText;
+	document.getElementById('pomodoro-time').textContent = formatPomodoroTime(pomodoroState.seconds);
+	document.getElementById('pomodoro-time').classList.remove('done');
+	document.getElementById('pomodoro-bar').classList.remove('hidden');
+	document.querySelectorAll('.habitica-task-item').forEach(el => el.classList.remove('pomodoro-active'));
+	var activeItem = document.querySelector(`.habitica-task-item[data-task-id="${taskId}"]`);
+	if (activeItem) activeItem.classList.add('pomodoro-active');
+}
+
+function togglePomodoro() {
+	if (pomodoroState.running) {
+		clearInterval(pomodoroState.interval);
+		pomodoroState.running = false;
+		document.getElementById('pomodoro-start-btn').textContent = '▶';
+	} else {
+		pomodoroState.running = true;
+		document.getElementById('pomodoro-start-btn').textContent = '⏸';
+		pomodoroState.interval = setInterval(_ => {
+			pomodoroState.seconds--;
+			document.getElementById('pomodoro-time').textContent = formatPomodoroTime(pomodoroState.seconds);
+			if (pomodoroState.seconds <= 0) {
+				clearInterval(pomodoroState.interval);
+				pomodoroState.running = false;
+				document.getElementById('pomodoro-start-btn').textContent = '▶';
+				document.getElementById('pomodoro-time').textContent = 'Done!';
+				document.getElementById('pomodoro-time').classList.add('done');
+				chrome.notifications && chrome.notifications.create('pomodoro-done', {
+					type: 'basic',
+					iconUrl: chrome.runtime.getURL('icons/logo-128.png'),
+					title: 'Pomodoro done!',
+					message: pomodoroState.taskText
+				});
+			}
+		}, 1000);
+	}
+}
+
+function resetPomodoro() {
+	clearInterval(pomodoroState.interval);
+	pomodoroState.running = false;
+	pomodoroState.seconds = 25 * 60;
+	document.getElementById('pomodoro-start-btn').textContent = '▶';
+	document.getElementById('pomodoro-time').textContent = formatPomodoroTime(pomodoroState.seconds);
+	document.getElementById('pomodoro-time').classList.remove('done');
+}
+
+function closePomodoro() {
+	clearInterval(pomodoroState.interval);
+	pomodoroState.running = false;
+	pomodoroState.taskId = null;
+	document.getElementById('pomodoro-bar').classList.add('hidden');
+	document.querySelectorAll('.habitica-task-item').forEach(el => el.classList.remove('pomodoro-active'));
+}
+
+var formatPomodoroTime = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+// --- Bookmarks ---
+
+async function getBookmarks() {
+	var p = await new Promise(r => chrome.storage.local.get('snoozeBookmarks', r));
+	return (p && p.snoozeBookmarks) || [];
+}
+
+async function saveBookmarks(list) {
+	return new Promise(r => chrome.storage.local.set({snoozeBookmarks: list}, r));
+}
+
+async function initBookmarks() {
+	renderBookmarks();
+	document.getElementById('bookmark-add-btn').addEventListener('click', async _ => {
+		var bm = await getBookmarks();
+		if (bm.length >= 10) {
+			alert('You already have 10 bookmarks. Remove one first.');
+			return;
+		}
+		var tab = await getTabsInWindow(true);
+		if (!tab || !tab.url || !isValid(tab)) return;
+		if (bm.some(b => b.url === tab.url)) return;
+		bm.push({url: tab.url, title: tab.title || tab.url, favicon: tab.favIconUrl || ''});
+		await saveBookmarks(bm);
+		renderBookmarks();
+	});
+}
+
+async function renderBookmarks() {
+	var list = document.getElementById('bookmarks-list');
+	var bm = await getBookmarks();
+	list.innerHTML = '';
+	if (!bm.length) {
+		list.innerHTML = '<div class="bookmarks-empty">No bookmarks yet. Add the current tab above.</div>';
+		return;
+	}
+	bm.forEach((b, i) => {
+		var item = document.createElement('div');
+		item.className = 'bookmark-item';
+
+		var num = document.createElement('span');
+		num.className = 'bookmark-num';
+		num.textContent = i === 9 ? '0' : String(i + 1);
+
+		var favicon = document.createElement('img');
+		favicon.className = 'bookmark-favicon';
+		favicon.src = b.favicon || getFaviconUrl(b.url);
+		favicon.onerror = _ => { favicon.src = '../icons/unknown.png'; };
+
+		var title = document.createElement('span');
+		title.className = 'bookmark-title';
+		title.textContent = b.title;
+
+		var url = document.createElement('span');
+		url.className = 'bookmark-url';
+		url.textContent = getHostname(b.url) || b.url;
+
+		var remove = document.createElement('span');
+		remove.className = 'bookmark-remove';
+		remove.textContent = '×';
+		remove.title = 'Remove';
+		remove.addEventListener('click', async e => {
+			e.stopPropagation();
+			var updated = (await getBookmarks()).filter((_, j) => j !== i);
+			await saveBookmarks(updated);
+			renderBookmarks();
+		});
+
+		item.addEventListener('click', _ => {
+			chrome.tabs.create({url: b.url, active: true});
+			setTimeout(_ => window.close(), 100);
+		});
+
+		item.append(num, favicon, title, url, remove);
+		list.appendChild(item);
+	});
 }
 
 window.onload = init
