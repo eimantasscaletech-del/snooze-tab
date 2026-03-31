@@ -1,33 +1,41 @@
 <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <radialGradient id="bg_gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-            <stop offset="0%" style="stop-color:#FF3B30; stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#A01C14; stop-opacity:1" />
-        </radialGradient>
-        <linearGradient id="inner_bg_gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#E12B20; stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#8B1812; stop-opacity:1" />
-        </linearGradient>
-        <filter id="inner_shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="0.75" result="blur"/>
-            <feOffset dx="0" dy="1" result="offsetBlur"/>
-            <feComposite in="offsetBlur" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowDifference"/>
-            <feFlood flood-color="#000000" flood-opacity="0.2" result="color"/>
-            <feComposite in="color" in2="shadowDifference" operator="in"/>
-            <feMerge>
-                <feMergeNode in="SourceGraphic"/>
-                <feMergeNode/>
-            </feMerge>
-        </filter>
-    </defs>
+  <defs>
+    <radialGradient id="card" cx="50%" cy="38%" r="70%">
+      <stop offset="0%" stop-color="#2a2a2a" />
+      <stop offset="100%" stop-color="#111111" />
+    </radialGradient>
+    <linearGradient id="yellowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="#F5A800" />
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FFD700" flood-opacity="0.5" />
+    </filter>
+  </defs>
 
-    <rect x="0" y="0" width="128" height="128" rx="20" ry="20" fill="url(#bg_gradient)"/>
+  <!-- Card background -->
+  <rect x="4" y="4" width="120" height="120" rx="22" ry="22" fill="url(#card)" />
+  <rect x="4" y="4" width="120" height="120" rx="22" ry="22" fill="none" stroke="#FFD700" stroke-width="2.5" opacity="0.7" />
 
-    <rect x="10" y="10" width="108" height="108" rx="14" ry="14" fill="url(#inner_bg_gradient)" filter="url(#inner_shadow)" />
+  <!-- Dragon motif: stylized fist/strike silhouette -->
+  <!-- Body of fist -->
+  <g filter="url(#glow)" fill="url(#yellowGrad)">
+    <!-- Knuckle row -->
+    <rect x="36" y="46" width="56" height="30" rx="8" />
+    <!-- Thumb -->
+    <rect x="28" y="54" width="18" height="16" rx="7" />
+    <!-- Fingers top ridge -->
+    <rect x="38" y="38" width="11" height="14" rx="5" />
+    <rect x="52" y="35" width="11" height="17" rx="5" />
+    <rect x="66" y="36" width="11" height="16" rx="5" />
+    <rect x="79" y="40" width="10" height="13" rx="5" />
+  </g>
 
-    <path d="M64,27.5 a2.8,2.8 0 0,0 -3.6,0 l-0.9,1.35 h1.3 l0.9,-1.35 a2.8,2.8 0 0,0 2.3,0 l0.9,1.35 h1.3 l-0.9,-1.35 a2.8,2.8 0 0,0 -3.6,0 Z" fill="#EE7B70" fill-opacity="0.3" />
+  <!-- Strike lines (motion) -->
+  <line x1="16" y1="44" x2="34" y2="52" stroke="#FFD700" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="14" y1="55" x2="28" y2="58" stroke="#FFD700" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+  <line x1="17" y1="65" x2="28" y2="64" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
 
-    <text x="64" y="75" text-anchor="middle" font-family="Verdana, Geneva, sans-serif" font-weight="bold" font-size="32" fill="white" letter-spacing="-0.5">25:00</text>
-
-    <text x="108" y="30" text-anchor="end" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="white">ZZ</text>
+  <!-- Timer text -->
+  <text x="64" y="104" text-anchor="middle" font-family="'Arial Black', Verdana, sans-serif" font-weight="900" font-size="18" fill="#FFD700" letter-spacing="1" opacity="0.95">25:00</text>
 </svg>

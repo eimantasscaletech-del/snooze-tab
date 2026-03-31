@@ -25,7 +25,12 @@
 	},
 	"offline_enabled": true,
 
-	"permissions": ["alarms", "contextMenus", "idle", "notifications", "storage", "tabs", "https://habitica.com/*", "bookmarks"],
+	"permissions": ["alarms", "contextMenus", "idle", "notifications", "storage", "tabs", "https://habitica.com/*", "bookmarks", "identity", "https://www.googleapis.com/*"],
+
+	"oauth2": {
+		"client_id": "232211191249-b5dv27oncbka7epqsl7eclmfqno0tsk1.apps.googleusercontent.com",
+		"scopes": ["https://www.googleapis.com/auth/calendar.readonly"]
+	},
 
 	"web_accessible_resources": ["html/settings.html"],
 

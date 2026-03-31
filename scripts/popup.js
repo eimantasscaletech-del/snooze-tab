@@ -75,7 +75,16 @@ async function init() {
 	if ((isInEditMode || isInDupeMode) && parent && parent.resizePopupIframe) parent.resizePopupIframe();
 }
 function setUpPopupTabs() {
-	document.querySelectorAll('.popup-tab').forEach(tab => tab.addEventListener('click', _ => togglePopupTab(tab.dataset.panel)));
+	document.querySelectorAll('.popup-tab').forEach(tab => tab.addEventListener('click', _ => {
+		if (tab.dataset.panel === 'pomodoro-panel') {
+			setTimeout(initPomoPanel, 0);
+			setTimeout(populatePomoPanelTasks, 50);
+		}
+		if (tab.dataset.panel === 'calendar-panel') {
+			setTimeout(initCalendarPanel, 0);
+		}
+		togglePopupTab(tab.dataset.panel);
+	}));
 }
 function togglePopupTab(panelId) {
 	document.querySelectorAll('.popup-tab').forEach(tab => {
@@ -714,15 +723,12 @@ function showHabiticaTasksView() {
 
 function startClock() {
 	var el = document.getElementById('popup-clock');
-	var tick = _ => {
-		var now = dayjs();
-		el.textContent = now.format(getHourFormat(true));
-	};
+	var tick = _ => { el.textContent = dayjs().format(getHourFormat(true)); };
 	tick();
 	setInterval(tick, 1000);
 }
 
-// --- Pomodoro ---
+// --- Pomodoro (inline bar in Habitica panel, kept for backward compat) ---
 
 var pomodoroState = {taskId: null, taskText: '', seconds: 25 * 60, running: false, interval: null};
 
@@ -794,6 +800,333 @@ function closePomodoro() {
 }
 
 var formatPomodoroTime = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+// --- Pomodoro Panel (full tab) ---
+
+var POMO_DURATION = 25 * 60;
+var pomoPanel = {
+	taskId: null, taskText: '', seconds: POMO_DURATION,
+	running: false, interval: null, initialized: false
+};
+
+async function getPomoStats() {
+	var p = await new Promise(r => chrome.storage.local.get('pomoStats', r));
+	return p.pomoStats || {done: 0, failed: 0};
+}
+async function savePomoStats(s) {
+	return new Promise(r => chrome.storage.local.set({pomoStats: s}, r));
+}
+
+async function initPomoPanel() {
+	if (pomoPanel.initialized) return;
+	pomoPanel.initialized = true;
+
+	document.getElementById('pomo-start-btn').addEventListener('click', pomoPanelToggle);
+	document.getElementById('pomo-reset-btn').addEventListener('click', pomoPanelReset);
+
+	document.getElementById('pomo-modal-done').addEventListener('click', _ => pomoPanelFinish('done'));
+	document.getElementById('pomo-modal-fail').addEventListener('click', _ => pomoPanelFinish('failed'));
+	document.getElementById('pomo-modal-relaunch').addEventListener('click', _ => {
+		document.getElementById('pomo-modal').classList.add('hidden');
+		pomoPanelReset();
+		pomoPanelToggle();
+	});
+	document.getElementById('pomo-modal-postpone').addEventListener('click', _ => {
+		document.getElementById('pomo-modal').classList.add('hidden');
+		pomoPanel.seconds = 5 * 60;
+		pomoPanelUpdateDisplay();
+		pomoPanelToggle();
+	});
+
+	await pomoPanelRefreshStats();
+	populatePomoPanelTasks();
+}
+
+async function pomoPanelFinish(result) {
+	document.getElementById('pomo-modal').classList.add('hidden');
+	var stats = await getPomoStats();
+	stats[result] = (stats[result] || 0) + 1;
+	await savePomoStats(stats);
+	await pomoPanelRefreshStats();
+	pomoPanelReset();
+}
+
+async function pomoPanelRefreshStats() {
+	var s = await getPomoStats();
+	document.getElementById('pomo-stat-done').textContent = `🥫 ${s.done || 0}`;
+	document.getElementById('pomo-stat-fail').textContent = `☠️ ${s.failed || 0}`;
+}
+
+function pomoPanelToggle() {
+	if (pomoPanel.running) {
+		clearInterval(pomoPanel.interval);
+		pomoPanel.running = false;
+		document.getElementById('pomo-start-btn').textContent = 'Start';
+	} else {
+		if (!pomoPanel.taskId) {
+			document.getElementById('pomo-selected-task').style.color = '#DF4E76';
+			document.getElementById('pomo-selected-task').textContent = 'Pick a task first!';
+			return;
+		}
+		pomoPanel.running = true;
+		document.getElementById('pomo-start-btn').textContent = 'Pause';
+		var total = pomoPanel.seconds;
+		var circumference = 326.7;
+		pomoPanel.interval = setInterval(_ => {
+			pomoPanel.seconds--;
+			pomoPanelUpdateDisplay();
+			var progress = pomoPanel.seconds / total;
+			document.getElementById('pomo-ring-fg').style.strokeDashoffset = circumference * (1 - progress);
+			if (pomoPanel.seconds <= 0) {
+				clearInterval(pomoPanel.interval);
+				pomoPanel.running = false;
+				document.getElementById('pomo-start-btn').textContent = 'Start';
+				pomoPanelOnFinish();
+			}
+		}, 1000);
+	}
+}
+
+function pomoPanelReset() {
+	clearInterval(pomoPanel.interval);
+	pomoPanel.running = false;
+	pomoPanel.seconds = POMO_DURATION;
+	document.getElementById('pomo-start-btn').textContent = 'Start';
+	document.getElementById('pomo-ring-fg').style.strokeDashoffset = 0;
+	pomoPanelUpdateDisplay();
+}
+
+function pomoPanelUpdateDisplay() {
+	document.getElementById('pomo-time-display').textContent = formatPomodoroTime(pomoPanel.seconds);
+}
+
+function pomoPanelOnFinish() {
+	try { new Audio(chrome.runtime.getURL('sounds/appointed.mp3')).play(); } catch(e) {}
+	chrome.notifications && chrome.notifications.create('pomo-panel-done', {
+		type: 'basic',
+		iconUrl: chrome.runtime.getURL('icons/logo-128.png'),
+		title: '🍅 Pomodoro done!',
+		message: pomoPanel.taskText
+	});
+	document.getElementById('pomo-modal-task').textContent = pomoPanel.taskText;
+	document.getElementById('pomo-modal').classList.remove('hidden');
+}
+
+function populatePomoPanelTasks() {
+	var listEl = document.getElementById('pomo-task-list');
+	var taskItems = document.querySelectorAll('.habitica-task-item[data-task-id]');
+	if (!taskItems.length) {
+		listEl.innerHTML = '<div class="pomo-empty">No Habitica tasks loaded. Go to Habitica tab first.</div>';
+		return;
+	}
+	listEl.innerHTML = '';
+	taskItems.forEach(item => {
+		var id = item.getAttribute('data-task-id');
+		var text = item.querySelector('.habitica-task-text') ? item.querySelector('.habitica-task-text').textContent : id;
+		var type = item.className.match(/habitica-task-(\w+)/);
+		type = type ? type[1] : '';
+
+		var row = document.createElement('div');
+		row.className = 'pomo-task-row';
+		if (pomoPanel.taskId === id) row.classList.add('selected');
+
+		var badge = document.createElement('span');
+		badge.className = 'pomo-task-type-badge';
+		badge.textContent = type;
+
+		var label = document.createElement('span');
+		label.textContent = text;
+
+		row.append(badge, label);
+		row.addEventListener('click', _ => {
+			pomoPanel.taskId = id;
+			pomoPanel.taskText = text;
+			document.querySelectorAll('.pomo-task-row').forEach(r => r.classList.remove('selected'));
+			row.classList.add('selected');
+			document.getElementById('pomo-selected-task').textContent = text;
+			document.getElementById('pomo-selected-task').style.color = '';
+			pomoPanelReset();
+		});
+		listEl.appendChild(row);
+	});
+}
+
+// --- Google Calendar ---
+
+var GCAL_CLIENT_ID = '232211191249-b5dv27oncbka7epqsl7eclmfqno0tsk1.apps.googleusercontent.com';
+var GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+var calToken = null;
+var calPanelInitialized = false;
+
+async function getStoredCalToken() {
+	var p = await new Promise(r => chrome.storage.local.get('gcalToken', r));
+	return p.gcalToken || null;
+}
+async function storeCalToken(token) {
+	return new Promise(r => chrome.storage.local.set({gcalToken: token}, r));
+}
+async function clearCalToken() {
+	calToken = null;
+	return new Promise(r => chrome.storage.local.remove('gcalToken', r));
+}
+
+async function initCalendarPanel() {
+	if (calPanelInitialized) {
+		if (calToken) fetchCalendarEvents();
+		return;
+	}
+	calPanelInitialized = true;
+
+	document.getElementById('cal-auth-btn').addEventListener('click', calAuth);
+	document.getElementById('cal-refresh-btn').addEventListener('click', fetchCalendarEvents);
+	document.getElementById('cal-signout-btn').addEventListener('click', calSignOut);
+
+	calToken = await getStoredCalToken();
+	if (calToken) {
+		showCalConnected();
+		fetchCalendarEvents();
+	}
+}
+
+async function calAuth() {
+	var redirectURL = chrome.identity.getRedirectURL();
+	var authURL = 'https://accounts.google.com/o/oauth2/auth' +
+		'?client_id=' + encodeURIComponent(GCAL_CLIENT_ID) +
+		'&response_type=token' +
+		'&redirect_uri=' + encodeURIComponent(redirectURL) +
+		'&scope=' + encodeURIComponent(GCAL_SCOPE);
+
+	try {
+		var responseUrl = await new Promise((resolve, reject) =>
+			chrome.identity.launchWebAuthFlow({url: authURL, interactive: true}, url => {
+				if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
+				else resolve(url);
+			})
+		);
+		var params = new URLSearchParams(new URL(responseUrl).hash.slice(1));
+		calToken = params.get('access_token');
+		if (!calToken) throw new Error('No token');
+		await storeCalToken(calToken);
+		showCalConnected();
+		fetchCalendarEvents();
+	} catch(e) {
+		document.getElementById('cal-events-list').innerHTML = '<div class="cal-error">Auth failed: ' + (e.message || e) + '</div>';
+	}
+}
+
+function showCalConnected() {
+	document.getElementById('cal-auth-btn').classList.add('hidden');
+	document.getElementById('cal-refresh-btn').classList.remove('hidden');
+	document.getElementById('cal-signout-btn').classList.remove('hidden');
+}
+
+async function calSignOut() {
+	await clearCalToken();
+	calPanelInitialized = false;
+	document.getElementById('cal-auth-btn').classList.remove('hidden');
+	document.getElementById('cal-refresh-btn').classList.add('hidden');
+	document.getElementById('cal-signout-btn').classList.add('hidden');
+	document.getElementById('cal-events-list').innerHTML = '<div class="cal-empty">Connect your Google Calendar to see today\'s events.</div>';
+}
+
+async function fetchCalendarEvents() {
+	var listEl = document.getElementById('cal-events-list');
+	listEl.innerHTML = '<div class="cal-loading">Loading events...</div>';
+
+	var now = dayjs();
+	var todayStart = now.startOf('day').toISOString();
+	var todayEnd = now.endOf('day').toISOString();
+
+	try {
+		var resp = await fetch(
+			`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(todayStart)}&timeMax=${encodeURIComponent(todayEnd)}&singleEvents=true&orderBy=startTime&maxResults=50`,
+			{headers: {Authorization: 'Bearer ' + calToken}}
+		);
+		if (resp.status === 401) {
+			await clearCalToken();
+			showCalDisconnected();
+			listEl.innerHTML = '<div class="cal-error">Session expired. Please reconnect.</div>';
+			return;
+		}
+		if (!resp.ok) {
+			listEl.innerHTML = '<div class="cal-error">API error: ' + resp.status + '</div>';
+			return;
+		}
+		var json = await resp.json();
+		renderCalEvents(json.items || []);
+	} catch(e) {
+		listEl.innerHTML = '<div class="cal-error">Network error. Check your connection.</div>';
+	}
+}
+
+function showCalDisconnected() {
+	document.getElementById('cal-auth-btn').classList.remove('hidden');
+	document.getElementById('cal-refresh-btn').classList.add('hidden');
+	document.getElementById('cal-signout-btn').classList.add('hidden');
+	calToken = null;
+}
+
+function renderCalEvents(events) {
+	var listEl = document.getElementById('cal-events-list');
+	if (!events.length) {
+		listEl.innerHTML = '<div class="cal-empty">No events today. Enjoy your free day!</div>';
+		return;
+	}
+	listEl.innerHTML = '';
+	var header = document.createElement('div');
+	header.className = 'cal-date-header';
+	header.textContent = dayjs().format('dddd, MMMM D');
+	listEl.appendChild(header);
+
+	events.forEach(ev => {
+		var item = document.createElement('div');
+		item.className = 'cal-event-item';
+
+		var dot = document.createElement('div');
+		dot.className = 'cal-event-dot';
+		var color = ev.colorId ? calEventColor(ev.colorId) : '#4285F4';
+		dot.style.background = color;
+
+		var timeEl = document.createElement('div');
+		timeEl.className = 'cal-event-time';
+		var isAllDay = !!(ev.start && ev.start.date && !ev.start.dateTime);
+		if (isAllDay) {
+			timeEl.textContent = 'All day';
+			timeEl.classList.add('allday');
+		} else {
+			var start = dayjs(ev.start.dateTime);
+			var end = dayjs(ev.end.dateTime);
+			timeEl.textContent = start.format(getHourFormat(start.minute() !== 0)) + '\n' + end.format(getHourFormat(end.minute() !== 0));
+		}
+
+		var body = document.createElement('div');
+		body.className = 'cal-event-body';
+
+		var title = document.createElement('div');
+		title.className = 'cal-event-title';
+		title.textContent = ev.summary || '(No title)';
+		body.appendChild(title);
+
+		if (ev.location) {
+			var loc = document.createElement('div');
+			loc.className = 'cal-event-loc';
+			loc.textContent = '📍 ' + ev.location;
+			body.appendChild(loc);
+		}
+
+		item.append(dot, timeEl, body);
+		listEl.appendChild(item);
+	});
+}
+
+function calEventColor(colorId) {
+	var colors = {
+		'1':'#a4bdfc','2':'#7ae7bf','3':'#dbadff','4':'#ff887c',
+		'5':'#fbd75b','6':'#ffb878','7':'#46d6db','8':'#e1e1e1',
+		'9':'#5484ed','10':'#51b749','11':'#dc2127'
+	};
+	return colors[colorId] || '#4285F4';
+}
 
 // --- Bookmarks ---
 

@@ -14,6 +14,8 @@
 		<button class="popup-tab active" id="snooze-tab-button" type="button" role="tab" aria-selected="true" aria-controls="snooze-panel" data-panel="snooze-panel">Snooze</button>
 		<button class="popup-tab" id="habitica-tab-button" type="button" role="tab" aria-selected="false" aria-controls="habitica-panel" data-panel="habitica-panel">Habitica</button>
 		<button class="popup-tab" id="bookmarks-tab-button" type="button" role="tab" aria-selected="false" aria-controls="bookmarks-panel" data-panel="bookmarks-panel">Bookmarks</button>
+		<button class="popup-tab" id="pomodoro-tab-button" type="button" role="tab" aria-selected="false" aria-controls="pomodoro-panel" data-panel="pomodoro-panel">Pomodoro</button>
+		<button class="popup-tab" id="calendar-tab-button" type="button" role="tab" aria-selected="false" aria-controls="calendar-panel" data-panel="calendar-panel">Calendar</button>
 		<span id="popup-clock" class="popup-clock"></span>
 	</div>
 
@@ -152,6 +154,61 @@
 			<span class="bookmarks-hint">Open with Ctrl+Alt+Cmd+[1–9,0]</span>
 		</div>
 		<div id="bookmarks-list" class="bookmarks-list"></div>
+	</div>
+
+	<div id="pomodoro-panel" class="popup-panel" role="tabpanel" aria-labelledby="pomodoro-tab-button" hidden>
+		<div class="pomo-layout">
+			<!-- Left: task picker -->
+			<div class="pomo-tasks-col">
+				<div class="pomo-section-label">Pick a task</div>
+				<div id="pomo-task-list" class="pomo-task-list">
+					<div class="pomo-empty">Load Habitica first.</div>
+				</div>
+			</div>
+			<!-- Right: timer + stats -->
+			<div class="pomo-timer-col">
+				<div class="pomo-selected-task" id="pomo-selected-task">—</div>
+				<svg class="pomo-ring" viewBox="0 0 120 120">
+					<circle class="pomo-ring-bg" cx="60" cy="60" r="52"/>
+					<circle class="pomo-ring-fg" id="pomo-ring-fg" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="0"/>
+				</svg>
+				<div class="pomo-time-display" id="pomo-time-display">25:00</div>
+				<div class="pomo-btns">
+					<button id="pomo-start-btn" class="pomo-btn pomo-btn-primary" type="button">Start</button>
+					<button id="pomo-reset-btn" class="pomo-btn" type="button">Reset</button>
+				</div>
+				<div class="pomo-stats">
+					<span class="pomo-stat-done" id="pomo-stat-done">🥫 0</span>
+					<span class="pomo-stat-fail" id="pomo-stat-fail">☠️ 0</span>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Pomodoro finish modal -->
+	<div id="pomo-modal" class="pomo-modal hidden">
+		<div class="pomo-modal-box">
+			<div class="pomo-modal-title">⏰ Time's up!</div>
+			<div class="pomo-modal-task" id="pomo-modal-task"></div>
+			<div class="pomo-modal-btns">
+				<button id="pomo-modal-done" class="pomo-btn pomo-btn-primary" type="button">🥫 Done</button>
+				<button id="pomo-modal-relaunch" class="pomo-btn" type="button">🔁 Relaunch</button>
+				<button id="pomo-modal-postpone" class="pomo-btn" type="button">⏱ +5 min</button>
+				<button id="pomo-modal-fail" class="pomo-btn pomo-btn-fail" type="button">☠️ Failed</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="calendar-panel" class="popup-panel" role="tabpanel" aria-labelledby="calendar-tab-button" hidden>
+		<div class="cal-header">
+			<span class="cal-title">Today's Calendar</span>
+			<button id="cal-auth-btn" class="cal-auth-btn" type="button">Connect Google</button>
+			<button id="cal-refresh-btn" class="cal-refresh-btn hidden" type="button">↻</button>
+			<button id="cal-signout-btn" class="cal-signout-btn hidden" type="button">Sign out</button>
+		</div>
+		<div id="cal-events-list" class="cal-events-list">
+			<div class="cal-empty">Connect your Google Calendar to see today's events.</div>
+		</div>
 	</div>
 	<script type="text/javascript" src="../scripts/dayjs.min.js"></script>
 	<script type="text/javascript" src="../scripts/flatpickr.min.js"></script>
