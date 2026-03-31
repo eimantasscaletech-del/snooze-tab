@@ -723,7 +723,7 @@ function showHabiticaTasksView() {
 
 function startClock() {
 	var el = document.getElementById('popup-clock');
-	var tick = _ => { el.textContent = dayjs().format(getHourFormat(true)); };
+	var tick = _ => { el.textContent = dayjs().format('HH:mm'); };
 	tick();
 	setInterval(tick, 1000);
 }
