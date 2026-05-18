@@ -101,7 +101,9 @@ function insertIntoCorrectPosition(t, alreadyExists = false) {
 		});
 		group.insertBefore(tab, Array.from(allTabs)[index]);
 	} else {
-		try {group.append(tab)}catch(e){}
+		try {group.append(tab)} catch(e) {
+			// Ignore append failures for stale DOM groups during refresh.
+		}
 	}
 	buildTabActions(t, tab)
 }
@@ -369,7 +371,11 @@ function openPopupModal(tabId, type, imgMissing) {
 	iframe.setAttribute('scrolling', 'no');
 	overlay.append(iframe);
 	overlay.classList.add('open');
-	setTimeout(_ => {try {iframe.contentWindow.focus()} catch(e){}}, 200);
+	setTimeout(_ => {
+		try {iframe.contentWindow.focus()} catch(e) {
+			// Focus can fail if the iframe is not ready yet.
+		}
+	}, 200);
 	bsf.freeze();
 	overlay.addEventListener('click', closeModalOnOutsideClick, {once: true});
 	document.addEventListener('keyup', closeModalOnOutsideClick);

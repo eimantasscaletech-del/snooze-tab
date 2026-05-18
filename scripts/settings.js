@@ -10,14 +10,14 @@ async function initOpenWeatherApiKey() {
 		btn.textContent = 'Saved!';
 		setTimeout(_ => btn.textContent = 'Save', 2000);
 	});
-	document.getElementById('owm-link').addEventListener('click', e => {
+	document.getElementById('owm-link').addEventListener('click', _ => {
 		e.preventDefault();
 		chrome.tabs.create({url: 'https://openweathermap.org/api', active: true});
 	});
 }
 
 async function initialize() {
-	document.querySelector('.nap-room').addEventListener('keyup', e => {if (e.which === 13) openExtensionTab('/html/nap-room.html')})
+	document.querySelector('.nap-room').addEventListener('keyup', _ => {if (e.which === 13) openExtensionTab('/html/nap-room.html')})
 	document.querySelector('.nap-room').addEventListener('click', _ => openExtensionTab('/html/nap-room.html'));
 	showIconOnScroll();
 	fillAbout()
@@ -31,7 +31,9 @@ async function initialize() {
 	options = upgradeSettings(options);
 	if (options.icons) document.querySelector('.nap-room img').src = `../icons/${options.icons}/nap-room.png`;
 
-	try {updateFormValues(options)} catch(e) {}
+	try {updateFormValues(options)} catch(e) {
+		// Keep settings usable even if stored options are malformed.
+	}
 	await initOpenWeatherApiKey();
 	addListeners();
 	await fetchHourFormat();
@@ -78,27 +80,27 @@ function updateFormValues(storage) {
 
 function addListeners() {
 	document.querySelectorAll('select').forEach(s => s.addEventListener('change', save));
-	document.querySelectorAll('#contextMenu input').forEach(c => c.addEventListener('change', e => save))
+	document.querySelectorAll('#contextMenu input').forEach(c => c.addEventListener('change', _ => save))
 
 	document.querySelector('#shortcut .btn').addEventListener('click', toggleShortcuts);
-	document.querySelector('#shortcut .btn').onkeyup = e => {if (e.which === 13) toggleShortcuts()}
+	document.querySelector('#shortcut .btn').onkeyup = _ => {if (e.which === 13) toggleShortcuts()}
 
 	document.querySelector('#right-click .btn').addEventListener('click', toggleRightClickOptions);
-	document.querySelector('#right-click .btn').onkeyup = e => {if (e.which === 13) toggleRightClickOptions()}
+	document.querySelector('#right-click .btn').onkeyup = _ => {if (e.which === 13) toggleRightClickOptions()}
 
 	document.addEventListener('visibilitychange', updateKeyBindings);
 
-	document.querySelectorAll('a[data-highlight="history"]').forEach(a => a.addEventListener('click', e => highlightSetting('history')))
+	document.querySelectorAll('a[data-highlight="history"]').forEach(a => a.addEventListener('click', _ => highlightSetting('history')))
 
 	document.getElementById('import').addEventListener('click', _ => document.getElementById('import_hidden').click());
-	document.getElementById('import').onkeyup = e => {if (e.which === 13) document.getElementById('import_hidden').click()}
+	document.getElementById('import').onkeyup = _ => {if (e.which === 13) document.getElementById('import_hidden').click()}
 	document.getElementById('import_hidden').addEventListener('change', importTabs);
 
 	document.getElementById('export').addEventListener('click', exportTabs);
-	document.getElementById('export').onkeyup = e => {if (e.which === 13) exportTabs()}
+	document.getElementById('export').onkeyup = _ => {if (e.which === 13) exportTabs()}
 
 	document.getElementById('reset').addEventListener('click', resetSettings);
-	document.getElementById('reset').onkeyup = e => {if (e.which === 13) resetSettings()}
+	document.getElementById('reset').onkeyup = _ => {if (e.which === 13) resetSettings()}
 
 	document.querySelector('code').addEventListener('click', _ => {
 		clipboard('about:addons')
@@ -119,12 +121,12 @@ async function save(e) {
 
 	var options = {popup: {}}
 	if (e && ['morning', 'evening'].includes(e.target.id)) {
-		var tabs = await getSnoozedTabs();
+		tabs = await getSnoozedTabs();
 		var ot = parseInt(e.target.getAttribute('data-orig-value'));
 		var f = t => !t.opened && dayjs(t.wakeUpTime).hour() === ot && dayjs(t.wakeUpTime).minute() === 0 && dayjs(t.wakeUpTime).second() === 0
 		var tabsToChange = tabs.filter(f);
 		if (tabsToChange.length) {
-			var count = `${tabsToChange.length > 1 ? 'are' : 'is'} ${tabsToChange.length} tab${tabsToChange.length > 1 ? 's' : ''}`
+			count = `${tabsToChange.length > 1 ? 'are' : 'is'} ${tabsToChange.length} tab${tabsToChange.length > 1 ? 's' : ''}`
 			if (confirm(`There ${count} scheduled to wake up at ${dayjs().minute(0).hour(ot).format(getHourFormat())}.
 Would you like to update ${tabsToChange.length > 1 ? 'them' : 'it'} to snooze till ${dayjs().minute(0).hour(e.target.value).format(getHourFormat())}?`)) {
 				tabs.filter(f).forEach(t => {
@@ -147,7 +149,7 @@ Would you like to update ${tabsToChange.length > 1 ? 'them' : 'it'} to snooze ti
 	if (e && e.target.tagName.toLowerCase() === 'select') e.target.setAttribute('data-orig-value', e.target.value);
 }
 
-function toggleRightClickOptions(e) {
+function toggleRightClickOptions() {
 	
 	var collapsed = document.getElementById('contextMenu');
 	var s = collapsed.closest('.input-container');
@@ -166,8 +168,8 @@ function toggleShortcuts(e) {
 
 	var browserInfo = s.querySelector(`.${getBrowser()}-info`);
 	browserInfo.querySelectorAll('a[data-href]').forEach(s => {
-		s.onclick = e => chrome.tabs.create({url: e.target.getAttribute('data-href'), active: true});
-		s.onkeyUp = e => { if (e.which === 13) chrome.tabs.create({url: e.target.getAttribute('data-href'), active: true})}
+		s.onclick = _ => chrome.tabs.create({url: e.target.getAttribute('data-href'), active: true});
+		s.onkeyUp = _ => { if (e.which === 13) chrome.tabs.create({url: e.target.getAttribute('data-href'), active: true})}
 	});
 	if (s.classList.contains('show')) {
 		browserInfo.style.maxHeight = browserInfo.scrollHeight + 'px';
@@ -229,7 +231,7 @@ async function importTabs(e) {
 	try {
 		var text = await e.target.files[0].text();
 		var json_array = JSON.parse(text);
-		if (!json_array || !json_array.length) throw false;
+		if (!json_array || !json_array.length) return false;
 
 		var allTabs = await getSnoozedTabs();
 		var existing_ids = allTabs.map(at => at.id), needs_update = [];

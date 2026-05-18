@@ -40,7 +40,9 @@ if (chrome.notifications) chrome.notifications.onClicked.addListener(async id =>
 					await chrome.tabs.update(found.id, {active: true});
 				}
 				return;
-			} catch (e) {}
+			} catch (e) {
+					// Ignore focus/update failures for tabs that disappeared.
+				}
 		}
 	}
 	await openExtensionTab('html/nap-room.html');

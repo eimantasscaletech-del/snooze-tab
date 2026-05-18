@@ -134,12 +134,16 @@ async function playExtensionSound(path) {
 			audio.volume = 1;
 			await audio.play();
 			return;
-		} catch (e) {}
+		} catch (e) {
+			// Fall back to the MV3 offscreen document below.
+		}
 	}
 	try {
 		if (!await ensureOffscreenDocument()) return;
 		await chrome.runtime.sendMessage({target: 'offscreen', type: 'play-sound', src: chrome.runtime.getURL(path)});
-	} catch (e) {}
+	} catch (e) {
+		// Sound playback is optional; notifications still work without it.
+	}
 }
 async function createWindow(tabId, incognito) {
 	if (tabId) return new Promise(r => chrome.windows.create({url: `/html/rise-and-shine.html#${tabId}`}, r));
@@ -184,7 +188,7 @@ async function openExtensionTab(url) {
 	var extTabs = tabs.filter(t => isDefault(t));
 	if (extTabs.length === 1){chrome.tabs.update(extTabs[0].id, {url, active: true})}
 	else if (extTabs.length > 1) {
-		var activeTab = extTabs.some(et => et.active) ? extTabs.find(et => et.active) : extTabs.reduce((t1, t2) => t1.index > t2.index ? t1 : t2);
+		activeTab = extTabs.some(et => et.active) ? extTabs.find(et => et.active) : extTabs.reduce((t1, t2) => t1.index > t2.index ? t1 : t2);
 		chrome.tabs.update(activeTab.id, {url, active: true});
 		chrome.tabs.remove(extTabs.filter(et => et !== activeTab).map(t => t.id))		
 	} else {
@@ -197,7 +201,7 @@ async function openExtensionTab(url) {
 async function openTab(tab, windowId, automatic = false) {
 	var windows = await getAllWindows();
 	if (tab.incognito) {
-		var w = windows.find(i => i.incognito) || await createWindow(undefined, t.incognito);
+		var w = windows.find(i => i.incognito) || await createWindow(undefined, tab.incognito);
 		await new Promise(r => chrome.tabs.create({url: tab.url, active: false, pinned: tab.pinned, windowId: w.id}, r));
 	} else if (!windows || !windows.filter(w => !w.incognito).length) {
 		await new Promise(r => chrome.windows.create({url: tab.url}, r));
@@ -362,7 +366,7 @@ async function snoozeRecurring(target, data) {
 
 	if (validTabs.length === 0) return {};
 	if (validTabs.length === 1 || target === 'tab') {
-		var activeTab = validTabs && validTabs.length ? validTabs[0] : await getTabsInWindow(true);
+		activeTab = validTabs && validTabs.length ? validTabs[0] : await getTabsInWindow(true);
 		if (!activeTab || !activeTab.url) return {};
 		Object.assign(sleepyObj, {
 			title: activeTab.title || getBetterUrl(activeTab.url),
@@ -546,12 +550,12 @@ async function calculateNextSnoozeTime(data) {
 		return NOW.startOf('d').add(isNextDay, 'd').hour(HOUR).minute(MINUTE).valueOf();
 	} else if (TYPE === 'daily_morning') {
 		var [m_hour, m_minute] = await getOptions('morning');
-		var isNextDay = NOW.hour() > m_hour || (NOW.hour() === m_hour && NOW.minute() >= m_minute) ? 1 : 0;
-		return NOW.startOf('d').add(isNextDay, 'd').hour(m_hour).minute(m_minute).valueOf();
+		var isNextMorning = NOW.hour() > m_hour || (NOW.hour() === m_hour && NOW.minute() >= m_minute) ? 1 : 0;
+		return NOW.startOf('d').add(isNextMorning, 'd').hour(m_hour).minute(m_minute).valueOf();
 	} else if (TYPE === 'daily_evening') {
 		var [e_hour, e_minute] = await getOptions('evening');
-		var isNextDay = NOW.hour() > e_hour || (NOW.hour() === e_hour && NOW.minute() >= e_minute) ? 1 : 0;
-		return NOW.startOf('d').add(isNextDay, 'd').hour(e_hour).minute(e_minute).valueOf();
+		var isNextEvening = NOW.hour() > e_hour || (NOW.hour() === e_hour && NOW.minute() >= e_minute) ? 1 : 0;
+		return NOW.startOf('d').add(isNextEvening, 'd').hour(e_hour).minute(e_minute).valueOf();
 	} else if (['weekends', 'mondays', 'weekly', 'monthly', 'custom'].includes(TYPE)) {
 		var days = [];
 		if (data.weekly) {

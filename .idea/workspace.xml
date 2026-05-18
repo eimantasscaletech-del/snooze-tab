@@ -5,40 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0c24d5bd-ff51-47cc-a648-ac506e0d2a27" name="Changes" comment="Works on DIA">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/dbnavigator.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/snooze-tab.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.planning/codebase/ARCHITECTURE.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.planning/codebase/CONCERNS.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.planning/codebase/CONVENTIONS.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.planning/codebase/INTEGRATIONS.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.planning/codebase/STACK.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.planning/codebase/STRUCTURE.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.planning/codebase/TESTING.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/html/offscreen.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/icons/human/before-end-of-work.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/offscreen.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/service-worker.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.py" beforeDir="false" afterPath="$PROJECT_DIR$/build.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/nap-room.html" beforeDir="false" afterPath="$PROJECT_DIR$/html/nap-room.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/popup.html" beforeDir="false" afterPath="$PROJECT_DIR$/html/popup.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/html/settings.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/ext-icon-32.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/ext-icon-48.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/icons/logo.svg" beforeDir="false" afterPath="$PROJECT_DIR$/icons/logo.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/background.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/common.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/common.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/dayjs.min.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/dayjs.min.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/nap_room.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/nap_room.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/popup.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/popup.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/settings.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/snoozz.me.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/snoozz.me.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/styles/common.css" beforeDir="false" afterPath="$PROJECT_DIR$/styles/common.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/styles/popup.css" beforeDir="false" afterPath="$PROJECT_DIR$/styles/popup.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -96,22 +68,22 @@
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
       <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.000000000002644" />
-      <entry key="S5" value="1.000053304661457" />
-      <entry key="S10" value="1.0145816761938198" />
-      <entry key="S30" value="1.615419175604491" />
-      <entry key="S60" value="2.568909957022866" />
-      <entry key="M2" value="3.505097402183633" />
-      <entry key="M5" value="4.317169310552697" />
-      <entry key="M10" value="4.649207523906775" />
-      <entry key="M15" value="4.8023774377906765" />
-      <entry key="M30" value="5.174915202966599" />
-      <entry key="H1" value="5.709815549111985" />
-      <entry key="H2" value="6.211282168954193" />
-      <entry key="H4" value="6.5607301480437075" />
-      <entry key="D1" value="6.919598863558592" />
-      <entry key="W1" value="6.988324128670475" />
+      <entry key="MS500" value="1.0000005977311233" />
+      <entry key="S2" value="1.0278052284362116" />
+      <entry key="S5" value="1.238589093420647" />
+      <entry key="S10" value="1.4884558254549198" />
+      <entry key="S30" value="1.7876392599186848" />
+      <entry key="S60" value="1.9071131560774521" />
+      <entry key="M2" value="2.248796409615358" />
+      <entry key="M5" value="3.605835020516509" />
+      <entry key="M10" value="4.844390924547592" />
+      <entry key="M15" value="5.462652589062383" />
+      <entry key="M30" value="6.395253165554205" />
+      <entry key="H1" value="7.262529370639948" />
+      <entry key="H2" value="7.963168483510835" />
+      <entry key="H4" value="8.428397103190346" />
+      <entry key="D1" value="8.896144996593238" />
+      <entry key="W1" value="8.984935524886058" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -133,23 +105,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.957376688957535E-15" />
-      <entry key="MS500" value="0.0011437599425964942" />
-      <entry key="S2" value="0.18390084323456382" />
-      <entry key="S5" value="0.5080175844078418" />
-      <entry key="S10" value="0.7272485994036377" />
-      <entry key="S30" value="1.5079804888127437" />
-      <entry key="S60" value="2.513155233659013" />
-      <entry key="M2" value="3.476573564151919" />
-      <entry key="M5" value="4.3055755930886255" />
-      <entry key="M10" value="4.643375294405694" />
-      <entry key="M15" value="4.7984756182282045" />
-      <entry key="M30" value="5.172940570492251" />
-      <entry key="H1" value="5.708808750742856" />
-      <entry key="H2" value="6.210769342270604" />
-      <entry key="H4" value="6.560470416233522" />
-      <entry key="D1" value="6.91955500415372" />
-      <entry key="W1" value="6.988317847391679" />
+      <entry key="MS100" value="0.0020220018043776897" />
+      <entry key="MS500" value="0.28917260059517713" />
+      <entry key="S2" value="0.7606021747700952" />
+      <entry key="S5" value="1.1201247380623418" />
+      <entry key="S10" value="1.4264793746402067" />
+      <entry key="S30" value="1.7661844292690898" />
+      <entry key="S60" value="1.8958464959140067" />
+      <entry key="M2" value="2.24084989825733" />
+      <entry key="M5" value="3.5992716197523142" />
+      <entry key="M10" value="4.83971281697324" />
+      <entry key="M15" value="5.459102505027422" />
+      <entry key="M30" value="6.393209218488834" />
+      <entry key="H1" value="7.261418404872774" />
+      <entry key="H2" value="7.962584708145659" />
+      <entry key="H4" value="8.428096912500488" />
+      <entry key="D1" value="8.896093671997845" />
+      <entry key="W1" value="8.984928159016858" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
@@ -214,7 +186,7 @@
       <workItem from="1776068553401" duration="100000" />
       <workItem from="1778662751980" duration="626000" />
       <workItem from="1778669945774" duration="461000" />
-      <workItem from="1779096359229" duration="741000" />
+      <workItem from="1779096359229" duration="1146000" />
     </task>
     <task id="LOCAL-00001" summary="03-23 before">
       <option name="closed" value="true" />
@@ -224,7 +196,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774276382034</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Works on DIA">
+      <option name="closed" value="true" />
+      <created>1779101374672</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1779101374672</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -252,7 +232,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/scripts/common.js</url>
-          <line>302</line>
+          <line>306</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>

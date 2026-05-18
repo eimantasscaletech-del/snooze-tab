@@ -53,7 +53,7 @@ async function init() {
 			document.querySelector('.choice:last-of-type').focus();
 		}
 		if ((e.which === 13 || e.which === 32) && !isOverlayOpen) {
-			var selectedChoice = document.querySelector('.choice.focused');
+			selectedChoice = document.querySelector('.choice.focused');
 			if (!selectedChoice) return;
 			selectedChoice.click();
 		}
@@ -191,7 +191,7 @@ async function generatePreview(type) {
 		previewText.innerText = `${getTabCountLabel(validTabs)} from ${getSiteCountLabel(validTabs)}`;
 		previewIcon.src = `../icons/${iconTheme}/window.png`;
 	} else if (type === 'selection') {
-		var validTabs = allTabs.filter(t => !isDefault(t) && isValid(t) && t.highlighted);
+		validTabs = allTabs.filter(t => !isDefault(t) && isValid(t) && t.highlighted);
 		previewText.innerText = `${validTabs.length} selected tabs from ${getSiteCountLabel(validTabs)}`;
 		previewIcon.src = `../icons/${iconTheme}/selection.png`;
 	} else {
@@ -312,7 +312,8 @@ async function buildRepeatCustomChoice() {
 				isValid = true;
 			}
 		} else if (date.selectedDates.length) {
-			var dates = date.selectedDates, isValid = true;
+			var dates = date.selectedDates;
+			isValid = true;
 			document.querySelector('.date-display').innerText = dates.length === 1 ? `${dates.map(d => getOrdinal(dayjs(d).format('D'))).join(', ')} of every month` : `${dates.length} days every month`;
 		} 
 		document.querySelectorAll('.repeat-time-wrapper .action').forEach(a => {
@@ -899,7 +900,9 @@ function pomoPanelUpdateDisplay() {
 }
 
 function pomoPanelOnFinish() {
-	try { new Audio(chrome.runtime.getURL('sounds/appointed.mp3')).play(); } catch(e) {}
+	try { new Audio(chrome.runtime.getURL('sounds/appointed.mp3')).play(); } catch(e) {
+		// Audio is optional when the browser blocks autoplay.
+	}
 	chrome.notifications && chrome.notifications.create('pomo-panel-done', {
 		type: 'basic',
 		iconUrl: chrome.runtime.getURL('icons/logo-128.png'),
