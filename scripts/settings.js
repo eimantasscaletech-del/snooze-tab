@@ -1,3 +1,21 @@
+async function initOpenWeatherApiKey() {
+	var stored = await new Promise(r => chrome.storage.local.get('openWeatherApiKey', r));
+	if (stored && stored.openWeatherApiKey) {
+		document.getElementById('openWeatherApiKey').value = stored.openWeatherApiKey;
+	}
+	document.getElementById('saveOpenWeatherApiKey').addEventListener('click', async _ => {
+		var key = document.getElementById('openWeatherApiKey').value.trim();
+		await new Promise(r => chrome.storage.local.set({openWeatherApiKey: key, moonPhaseCache: null}, r));
+		var btn = document.getElementById('saveOpenWeatherApiKey');
+		btn.textContent = 'Saved!';
+		setTimeout(_ => btn.textContent = 'Save', 2000);
+	});
+	document.getElementById('owm-link').addEventListener('click', e => {
+		e.preventDefault();
+		chrome.tabs.create({url: 'https://openweathermap.org/api', active: true});
+	});
+}
+
 async function initialize() {
 	document.querySelector('.nap-room').addEventListener('keyup', e => {if (e.which === 13) openExtensionTab('/html/nap-room.html')})
 	document.querySelector('.nap-room').addEventListener('click', _ => openExtensionTab('/html/nap-room.html'));
@@ -14,13 +32,9 @@ async function initialize() {
 	if (options.icons) document.querySelector('.nap-room img').src = `../icons/${options.icons}/nap-room.png`;
 
 	try {updateFormValues(options)} catch(e) {}
-	
+	await initOpenWeatherApiKey();
 	addListeners();
 	await fetchHourFormat();
-
-	// calculateStorage();
-	// chrome.storage.onChanged.addListener(calculateStorage);
-	
 
 	if (getBrowser() === 'safari') chrome.runtime.sendMessage({wakeUp: true});
 }
@@ -178,7 +192,7 @@ async function updateKeyBindings() {
 		var keys = wrapInDiv('', ...splitShortcut(c.shortcut).map(s => Object.assign(document.createElement('kbd'),{innerText: s})));
 		if (choices[c.name]) bindings.append(wrapInDiv('flex', wrapInDiv({innerText: choices[c.name].label}), keys));
 		if (c.name === 'nap-room') bindings.append(wrapInDiv('flex', wrapInDiv({innerText: 'Open Sleeping Tabs'}), keys));
-		if (c.name === '_execute_browser_action') bindings.append(wrapInDiv('flex', wrapInDiv({innerText: 'Open Popup'}), keys));
+		if (c.name === '_execute_action' || c.name === '_execute_browser_action') bindings.append(wrapInDiv('flex', wrapInDiv({innerText: 'Open Popup'}), keys));
 	});
 	if (document.getElementById('shortcut').classList.contains('show')) {
 		document.querySelector('.shortcuts').style.maxHeight = document.querySelector('.shortcuts').scrollHeight + 'px';	

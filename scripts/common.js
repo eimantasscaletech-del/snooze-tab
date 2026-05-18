@@ -1,7 +1,9 @@
-var colours = window.gradientSteps ? gradientSteps('#F3B845', '#DF4E76', 100) : [];
+var hasDocument = typeof document !== 'undefined';
+var hasWindow = typeof window !== 'undefined';
+var colours = typeof gradientSteps === 'function' ? gradientSteps('#F3B845', '#DF4E76', 100) : [];
 function getBrowser() {
-	if (!!navigator.userAgent.match(/safari/i) && !navigator.userAgent.match(/chrome/i) && typeof document.body.style.webkitFilter !== 'undefined') return 'safari';
-	if (!!window.sidebar) return 'firefox';
+	if (typeof navigator !== 'undefined' && !!navigator.userAgent.match(/safari/i) && !navigator.userAgent.match(/chrome/i) && hasDocument && typeof document.body.style.webkitFilter !== 'undefined') return 'safari';
+	if (hasWindow && !!window.sidebar) return 'firefox';
 	return 'chrome';
 }
 /*	ASYNCHRONOUS FUNCTIONS	*/
@@ -44,7 +46,7 @@ async function findTabAnywhere(url, tabDBId) {
 		if (found) return;
 		var tabs = await new Promise(r => chrome.tabs.query({windowId: wid}, r));
 		if (url && tabs && tabs.some(t => t.url === url)) return found = tabs.find(t => t.url === url);
-		if (!url && tabdDBId && tabs && tabs.some(t => t.url.indexOf(tabDBId) > -1)) return found = tabs.find(t => t.url.indexOf(tabDBId) > -1);
+		if (!url && tabDBId && tabs && tabs.some(t => t.url.indexOf(tabDBId) > -1)) return found = tabs.find(t => t.url.indexOf(tabDBId) > -1);
 	}
 	return found;
 }
@@ -59,6 +61,7 @@ async function getStorageSize() {
 	return calcObjectSize(tabs) + calcObjectSize(options);
 }
 async function isIncognitoAllowed() {
+	if (!chrome.extension || !chrome.extension.isAllowedIncognitoAccess) return false;
 	return new Promise(r => chrome.extension.isAllowedIncognitoAccess(r));
 }
 
@@ -94,9 +97,49 @@ async function createAlarm(when, willWakeUpATab) {
 }
 async function createNotification(id, title, imgUrl, message, force) {
 	var n = await getOptions('notifications');
-	if (n === 'sound') try { new Audio(chrome.runtime.getURL('sounds/appointed.mp3')).play()} catch (e){}
+	if (n === 'sound') await playExtensionSound('sounds/appointed.mp3');
 	if (!chrome.notifications || (n && n === 'off' && !force)) return;
 	await chrome.notifications.create(id, {type: 'basic', iconUrl: chrome.runtime.getURL(imgUrl), title, message});
+}
+
+var creatingOffscreenDocument;
+async function ensureOffscreenDocument() {
+	if (!chrome.offscreen || !chrome.offscreen.createDocument) return false;
+	var url = chrome.runtime.getURL('html/offscreen.html');
+	if (chrome.runtime.getContexts) {
+		var contexts = await chrome.runtime.getContexts({
+			contextTypes: ['OFFSCREEN_DOCUMENT'],
+			documentUrls: [url]
+		});
+		if (contexts && contexts.length) return true;
+	}
+	if (!creatingOffscreenDocument) {
+		creatingOffscreenDocument = chrome.offscreen.createDocument({
+			url: 'html/offscreen.html',
+			reasons: [chrome.offscreen.Reason && chrome.offscreen.Reason.AUDIO_PLAYBACK ? chrome.offscreen.Reason.AUDIO_PLAYBACK : 'AUDIO_PLAYBACK'],
+			justification: 'Play Snoozz notification sounds.'
+		}).catch(e => {
+			if (!e || !e.message || e.message.indexOf('Only a single offscreen document') === -1) throw e;
+		}).finally(_ => creatingOffscreenDocument = null);
+	}
+	await creatingOffscreenDocument;
+	return true;
+}
+
+async function playExtensionSound(path) {
+	if (!path) return;
+	if (typeof Audio !== 'undefined') {
+		try {
+			var audio = new Audio(chrome.runtime.getURL(path));
+			audio.volume = 1;
+			await audio.play();
+			return;
+		} catch (e) {}
+	}
+	try {
+		if (!await ensureOffscreenDocument()) return;
+		await chrome.runtime.sendMessage({target: 'offscreen', type: 'play-sound', src: chrome.runtime.getURL(path)});
+	} catch (e) {}
 }
 async function createWindow(tabId, incognito) {
 	if (tabId) return new Promise(r => chrome.windows.create({url: `/html/rise-and-shine.html#${tabId}`}, r));
@@ -106,8 +149,9 @@ async function createWindow(tabId, incognito) {
 /*	CONFIGURE	*/
 
 async function setTheme() {
+	if (!hasDocument) return;
 	var t = await getOptions('theme');
-	if (t === 'system') t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+	if (t === 'system') t = hasWindow && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 	document.body.classList.toggle('dark', t === 'dark');
 }
 setTheme();
@@ -124,8 +168,10 @@ async function updateBadge(cachedTabs, cachedBadge) {
 	var tabs = cachedTabs || await getSnoozedTabs();
 	tabs = sleeping(tabs);
 	if (tabs.length > 0 && badge && ['all','today'].includes(badge)) num = badge === 'today' ? today(tabs).length : tabs.length;
-	chrome.browserAction.setBadgeText({text: num > 0 ? num.toString() : ''});
-	chrome.browserAction.setBadgeBackgroundColor({color: '#0072BC'});
+	var action = chrome.action || chrome.browserAction;
+	if (!action) return;
+	action.setBadgeText({text: num > 0 ? num.toString() : ''});
+	action.setBadgeBackgroundColor({color: '#0072BC'});
 }
 
 /*	OPEN 	*/
@@ -371,7 +417,7 @@ async function getChoices(which) {
 			label: 'In One Hour',
 			repeatLabel: 'Every hour',
 			time: NOW.add(1, 'h'),
-			timeString: NOW.add(1, 'h').dayOfYear() == NOW.dayOfYear() ? 'Today' : 'Tomorrow',
+			timeString: NOW.add(1, 'h').dayOfYear() === NOW.dayOfYear() ? 'Today' : 'Tomorrow',
 			repeatTime: NOW.add(1, 'h').format(getHourFormat(true)),
 			repeatTimeString: `Starts at`,
 			repeat_id: 'hourly',
@@ -531,13 +577,21 @@ var getFaviconUrl = url => {
 var getColorForUrl = (url = 'snoozz.me') => colours[url.split('').map(c => c.charCodeAt(0)).reduce((a, b) => a + b) % 100];
 
 var getHostname = url => {
-	var h = Object.assign(document.createElement('a'), {href: url}).hostname;
-	return (h && h.length) ? h : undefined;
+	try {
+		var h = new URL(url).hostname;
+		return (h && h.length) ? h : undefined;
+	} catch (e) {
+		return undefined;
+	}
 }
 
 var getBetterUrl = url => {
-	var a = Object.assign(document.createElement('a'), {href: url});
-	return a.hostname + a.pathname;
+	try {
+		var a = new URL(url);
+		return a.hostname + a.pathname;
+	} catch (e) {
+		return url;
+	}
 }
 
 var getTabCountLabel = tabs => `${tabs.length} tab${tabs.length === 1 ? '' : 's'}`
@@ -571,7 +625,7 @@ var isDefault = tabs => tabs.title && ['nap room | snoozz', 'settings | snoozz',
 
 var isValid = tabs => {
 	var validProtocols = ['http', 'https', 'ftp', 'chrome-extension', 'web-extension', 'moz-extension', 'extension'];
-	if (getBrowser() == 'chrome') validProtocols.push('file');
+	if (getBrowser() === 'chrome') validProtocols.push('file');
 	return tabs.url && validProtocols.includes(tabs.url.substring(0, tabs.url.indexOf(':')));
 }
 

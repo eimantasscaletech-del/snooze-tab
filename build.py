@@ -6,7 +6,21 @@ import json
 import shutil
 from re import search
 import os
-from shell import ex
+import subprocess
+
+class CommandResult:
+	def __init__(self, result):
+		self.result = result
+
+	def stdout(self):
+		if self.result.stdout:
+			print(self.result.stdout, end='')
+		if self.result.stderr:
+			print(self.result.stderr, end='')
+		return self.result.stdout
+
+def ex(command):
+	return CommandResult(subprocess.run(command, shell=True, check=True, capture_output=True, text=True))
 
 FOLDER = 'build_temp'
 with open('manifest.json') as m: 
@@ -40,6 +54,7 @@ shutil.copytree('sounds', FOLDER + '/sounds', dirs_exist_ok=True, ignore = shitf
 #
 def minifyFilesInDirectory(directory, ext, url):
 	sameSize = '{:<16}'
+	replacements = []
 	os.mkdir(FOLDER + '/' + directory)
 	for root, dirs, files in os.walk(directory):
 		for name in files:
@@ -52,11 +67,14 @@ def minifyFilesInDirectory(directory, ext, url):
 				ex('uglifyjs ' + directory + '/' + name + ' -c -m -o ' + FOLDER + '/' + directory + '/' + name[:-chars] + '.min' + ext).stdout()
 				replaceInHTMLFiles(name, name[:-chars] + '.min' + ext)
 				replaceInManfest(name, name[:-chars] + '.min' + ext)
+				replacements.append((name, name[:-chars] + '.min' + ext))
 				print('\r✓ Minified  ' + '\x1b[1;32;33m' + sameSize.format(name) + '\x1b[0m -> \x1b[1;32;32m' + name[:-chars] + '.min' + ext + '\x1b[0m', end='', flush=True)
 			elif ext == '.css' and not name.endswith('.min' + ext):
 				ex('csso ' + directory + '/' + name + ' -o ' + FOLDER + '/' + directory + '/' + name[:-chars] + '.min' + ext).stdout()
 				replaceInHTMLFiles(name, name[:-chars] + '.min' + ext)
 				print('\r✓ Minified  ' + '\x1b[1;32;33m' + sameSize.format(name) + '\x1b[0m -> \x1b[1;32;32m' + name[:-chars] + '.min' + ext + '\x1b[0m', end='', flush=True)
+	if ext == '.js':
+		replaceInBuiltScriptFiles(replacements)
 
 def replaceInHTMLFiles(original, replacement):
 	for root, dirs, files in os.walk(FOLDER + '/html'):
@@ -67,6 +85,18 @@ def replaceInHTMLFiles(original, replacement):
 			file.close()
 			file = open(os.path.join(root, name), 'wt')
 			file.write(h_data)
+			file.close()
+
+def replaceInBuiltScriptFiles(replacements):
+	for root, dirs, files in os.walk(FOLDER + '/scripts'):
+		for name in files:
+			file = open(os.path.join(root, name), 'rt')
+			s_data = file.read()
+			file.close()
+			for original, replacement in replacements:
+				s_data = s_data.replace(original, replacement)
+			file = open(os.path.join(root, name), 'wt')
+			file.write(s_data)
 			file.close()
 
 def replaceInManfest(original, replacement):
@@ -93,7 +123,8 @@ print('\n\nCreated Chrome Release: ' + '\x1b[35m ' + name + '.zip' + '\x1b[0m')
 # Add Open popup shortcut to start of manifest.commands
 #
 del data['offline_enabled']
-mod_commands = {'_execute_browser_action' : {'description': 'Open the Snoozz popup'}}
+if 'offscreen' in data['permissions']: data['permissions'].remove('offscreen')
+mod_commands = {'_execute_action' : {'description': 'Open the Snoozz popup'}}
 for key, value in data['commands'].items(): mod_commands[key] = value
 
 data['commands'] = mod_commands

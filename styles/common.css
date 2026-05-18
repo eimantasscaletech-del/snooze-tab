@@ -15,20 +15,19 @@ body {
 	--bg-color: #fff;
 
 	color: var(--color);
-	background: linear-gradient(135deg, var(--bg-color) 25%, #FFF0 25%) -20px 25px,
-				linear-gradient(225deg, var(--bg-color) 25%, #FFF0 25%) -20px 25px,
-				linear-gradient(315deg, var(--bg-color) 25%, #FFF0 25%) 0px 25px,
-				linear-gradient( 45deg, var(--bg-color) 25%, #FFF0 25%) 0px 25px,
-				linear-gradient(135deg, #F3B84528 25%, #FFF0 25%) -19px 23px,
-				linear-gradient(225deg, #F3B84528 25%, #FFF0 25%) -19px 23px,
-				linear-gradient(315deg, #F3B84528 25%, #FFF0 25%) 0px 23px,
-				linear-gradient( 45deg, #F3B84528 25%, #FFF0 25%) 0px 23px,
-				linear-gradient(135deg, #DF4E7621 25%, #FFF0 25%) -20px 27px,
-				linear-gradient(225deg, #DF4E7621 25%, #FFF0 25%) -20px 27px,
-				linear-gradient(315deg, #DF4E7621 25%, #FFF0 25%) 0px 27px,
-				linear-gradient( 45deg, #DF4E7621 25%, #FFF0 25%) 0px 27px;
+	background:
+				radial-gradient(circle at top left, #fff1ed 0, #fff1ed 12%, transparent 42%),
+				linear-gradient(135deg, rgba(255, 255, 255, .22) 25%, #FFF0 25%) -20px 25px,
+				linear-gradient(225deg, rgba(255, 255, 255, .22) 25%, #FFF0 25%) -20px 25px,
+				linear-gradient(315deg, rgba(255, 255, 255, .22) 25%, #FFF0 25%) 0 25px,
+				linear-gradient(45deg, rgba(255, 255, 255, .22) 25%, #FFF0 25%) 0 25px,
+				linear-gradient(135deg, rgba(214, 113, 95, .12) 25%, #FFF0 25%) -19px 23px,
+				linear-gradient(225deg, rgba(214, 113, 95, .12) 25%, #FFF0 25%) -19px 23px,
+				linear-gradient(315deg, rgba(214, 113, 95, .12) 25%, #FFF0 25%) 0 23px,
+				linear-gradient(45deg, rgba(214, 113, 95, .12) 25%, #FFF0 25%) 0 23px,
+				linear-gradient(180deg, #ffe6e0 0%, #ffd5cc 52%, #ffc2b5 100%);
 	background-size: 40px 40px;
-	background-color: var(--bg-color);
+	background-color: #ffd5cc;
 
 	padding: 1em 0;
 	font-family: 'Arial', sans-serif;
@@ -90,7 +89,7 @@ body.dark .snoozz-text, body.dark img[src="../icons/unknown.png"], body.dark .se
 	animation: spin 20s infinite linear paused;
 }
 
-@keyframes spin {from {transform: rotate(0)} to {transform: rotate(360deg)}}
+
 .scroll-logo:not(.hidden) img {
 	animation-play-state: running;
 }

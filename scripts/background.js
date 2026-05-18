@@ -15,6 +15,7 @@ chrome.storage.onChanged.addListener(async changes => {
 	if (changes.snoozedOptions) {
 		await setUpContextMenus(changes.snoozedOptions.newValue.contextMenu);
 		updateBadge(null, changes.snoozedOptions.newValue.badge);
+		await syncIntervalBeepAlarm(changes.snoozedOptions.newValue);
 		if (changes.snoozedOptions.oldValue && changes.snoozedOptions.newValue.history !== changes.snoozedOptions.oldValue.history) await wakeUpTask();
 	}
 	if (changes.snoozed) {
@@ -71,6 +72,30 @@ async function setNextAlarm(tabs) {
 	}
 }
 
+function getNextIntervalBeepTime(minutes) {
+	var now = dayjs();
+	var interval = parseInt(minutes, 10);
+	if (![15, 30].includes(interval)) interval = 30;
+	var next = now.second(0).millisecond(0);
+	var remainder = next.minute() % interval;
+	if (remainder === 0 && now.second() === 0 && now.millisecond() === 0) return next.valueOf();
+	return next.add(remainder === 0 ? interval : interval - remainder, 'minute').valueOf();
+}
+
+async function playIntervalBeep() {
+	await playExtensionSound('sounds/appointed.mp3');
+}
+
+async function syncIntervalBeepAlarm(options) {
+	var settings = options || await getOptions(['intervalBeepEnabled', 'intervalBeepMinutes']);
+	var enabled = !!settings.intervalBeepEnabled;
+	var minutes = parseInt(settings.intervalBeepMinutes, 10);
+	if (!enabled) return chrome.alarms.clear('intervalBeep');
+	if (![15, 30].includes(minutes)) minutes = 30;
+	var when = getNextIntervalBeepTime(minutes);
+	await chrome.alarms.create('intervalBeep', {when, periodInMinutes: minutes});
+}
+
 async function wakeMeUp(tabs) {
 	var now = dayjs().valueOf();
 	var wakingUp = t => !t.paused && !t.opened && (t.url || (t.tabs && t.tabs.length && t.tabs.length > 0)) && t.wakeUpTime && t.wakeUpTime <= now;
@@ -78,9 +103,9 @@ async function wakeMeUp(tabs) {
 	if (tabsToWakeUp.length === 0) return;
 	bgLog(['Waking up tabs', tabsToWakeUp.map(t => t.id).join(', ')], ['', 'green'], 'yellow');
 	tabs.filter(wakingUp).filter(t => !t.repeat).forEach(t => t.opened = now);
-	for (var s of tabs.filter(wakingUp).filter(t => t.repeat)) {
-		var next = await calculateNextSnoozeTime(s.repeat);
-		s.wakeUpTime = next.valueOf();
+	for (var tab of tabs.filter(wakingUp).filter(t => t.repeat)) {
+		var next = await calculateNextSnoozeTime(tab.repeat);
+		tab.wakeUpTime = next.valueOf();
 	}
 	await saveTabs(tabs);
 
@@ -117,6 +142,17 @@ async function setUpContextMenus(cachedMenus) {
 }
 if (chrome.commands) chrome.commands.onCommand.addListener(async (command, tab) => {
 	if (command === 'nap-room') return openExtensionTab('/html/nap-room.html');
+	var bmMatch = command.match(/^bookmark-(\d+)$/);
+	if (bmMatch) {
+		var index = parseInt(bmMatch[1]) - 1;
+		if (bmMatch[1] === '10') index = 9;
+		var p = await new Promise(r => chrome.storage.local.get('snoozeBookmarks', r));
+		var bookmarks = (p && p.snoozeBookmarks) || [];
+		if (bookmarks[index] && bookmarks[index].url) {
+			chrome.tabs.create({url: bookmarks[index].url, active: true});
+		}
+		return;
+	}
 	tab = tab || await getTabsInWindow(true);
 	await snoozeInBackground({menuItemId: command, pageUrl: tab.url}, tab)
 })
@@ -151,7 +187,7 @@ async function snoozeInBackground(item, tab) {
 
 async function contextMenuUpdater(menu) {
 	var choices = await getChoices();
-	for (c of menu.menuIds) {
+	for (const c of menu.menuIds) {
 		if (choices[c]) await chrome.contextMenus.update(c, {enabled: !choices[c].disabled});
 	}
 	await chrome.contextMenus.refresh();
@@ -189,6 +225,7 @@ async function init() {
 		allTabs.filter(t => (t.startUp || (t.repeat && t.repeat.type === 'startup')) && !t.opened).forEach(t => t.wakeUpTime = dayjs().subtract(10, 's').valueOf());
 		await saveTabs(allTabs);
 	}
+	await syncIntervalBeepAlarm();
 	await wakeUpTask();
 	await setUpContextMenus();
 }
@@ -196,31 +233,24 @@ async function init() {
 chrome.runtime.onInstalled.addListener(async details => {
 	setUpExtension();
 	if (chrome.runtime.setUninstallURL) chrome.runtime.setUninstallURL('https://snoozz.me/bye');
-	if (details && details.reason && details.reason == 'install') await new Promise(r => chrome.tabs.create({url: 'https://snoozz.me/hello', active: true}, r));
-	if (details && details.reason && details.reason == 'update' && details.previousVersion && details.previousVersion != chrome.runtime.getManifest().version) {
+	if (details && details.reason && details.reason === 'install') await new Promise(r => chrome.tabs.create({url: 'https://snoozz.me/hello', active: true}, r));
+	if (details && details.reason && details.reason === 'update' && details.previousVersion && details.previousVersion !== chrome.runtime.getManifest().version) {
 		if (chrome.runtime.getManifest().version.search(/^\d{1,3}(\.\d{1,3}){1,2}$/) !== 0) return;		// skip if minor version
 		await new Promise(r => chrome.storage.local.set({'updated': true}, r));
 		if (chrome.notifications) createNotification(null, 'Snoozz has been updated', 'icons/logo.svg', 'Click here to see what\'s new.', true);
 	}
 });
 chrome.runtime.onStartup.addListener(init);
-chrome.alarms.onAlarm.addListener(async a => { if (a.name === 'wakeUpTabs') await wakeUpTask()});
+chrome.alarms.onAlarm.addListener(async a => {
+	if (a.name === 'wakeUpTabs') await wakeUpTask();
+	if (a.name === 'intervalBeep') await playIntervalBeep();
+});
 if (chrome.idle) chrome.idle.onStateChanged.addListener(async s => {
 	if (s === 'active' || getBrowser() === 'firefox') {
 		if (navigator && navigator.onLine === false) {
-			window.addEventListener('online', async _ => {await wakeUpTask()}, {once: true});
+			if (typeof window !== 'undefined') window.addEventListener('online', async _ => {await wakeUpTask()}, {once: true});
 		} else {
 			await wakeUpTask();	
 		}
 	}
-});
-
-chrome.action.onClicked.addListener(async (tab) => {
-	if (!tab?.url) return;
-
-	const target = new URL("https://sublime.app/");
-	target.searchParams.set("url", tab.url);
-	if (tab.title) target.searchParams.set("title", tab.title);
-
-	await chrome.tabs.create({ url: target.toString() });
 });

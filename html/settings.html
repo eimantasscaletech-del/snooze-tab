@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,12 +9,12 @@
 	<link rel="stylesheet" href="../styles/settings.css" />
 </head>
 <body>
-	<div class="scroll-logo hidden"><img src="../icons/logo.svg"></div>
+	<div class="scroll-logo hidden"><img src="../icons/logo.svg" alt="Snoozz logo"></div>
 	<div class="flex center">
-		<img class="snoozz-logo hoverable" src="../icons/logo.svg">
-		<img class="snoozz-text" src="../icons/snoozz.png">
+		<img class="snoozz-logo hoverable" src="../icons/logo.svg" alt="Snoozz logo">
+		<img class="snoozz-text" src="../icons/snoozz.png" alt="Snooze">
 	</div>
-	<div tabindex="0" class="nap-room" data-href="/html/nap-room.html" data-hover="See your sleeping tabs"><img data-href="/html/nap-room.html" src="../icons/human/nap-room.png"></div>
+	<div tabindex="0" class="nap-room" data-href="/html/nap-room.html" data-hover="See your sleeping tabs"><img data-href="/html/nap-room.html" src="../icons/human/nap-room.png" alt="Nap room"></div>
 	<div class="settings-container">
 		<h2 class="center"><span>Settings</span></h2><br>
 		<div class="input-container flex">
@@ -152,13 +152,23 @@
 		<div class="input-container flex">
 			<div>
 				<h4>Snoozz Notifications</h4>
-				<p>Choose to see browser notifcations for tabs and windows waking up.</p>
+				<p>Choose to see browser notifications for tabs and windows waking up.</p>
 			</div>
 			<div class="select-wrapper"><select class="direct" id="notifications">
 				<option value="sound">Yes, with sound</option>
 				<option value="on" selected>Yes</option>
 				<option value="off">No</option>
 			</select></div>
+		</div>
+		<div class="input-container flex">
+			<div>
+				<h4>OpenWeather API Key</h4>
+				<p>Used to show the current moon phase on the extension icon when Pomodoro is not running. Get a free key at <a id="owm-link" href="#">openweathermap.org</a>.</p>
+			</div>
+			<div>
+				<input type="text" id="openWeatherApiKey" placeholder="Paste your API key here" style="width:220px;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">
+				<button id="saveOpenWeatherApiKey" style="margin-left:6px;padding:6px 10px;border-radius:4px;border:1px solid #0072BC;background:#0072BC;color:#fff;cursor:pointer;font-size:13px;">Save</button>
+			</div>
 		</div>
 		<div class="input-container flex">
 			<div>
@@ -341,7 +351,7 @@
 		</div>
 	</div>
 	<div class="copied">Copied to clipboard</div>
-	<div class="import-success">Succesfully imported tabs from <span></span>.</div>
+	<div class="import-success">Successfully imported tabs from <span></span>.</div>
 	<div class="import-fail">Unable to import tabs from this file.<br>Please select another one.</div>
 	<script type="text/javascript" src="../scripts/dayjs.min.js"></script>
 	<script type="text/javascript" src="../scripts/common.js"></script>
