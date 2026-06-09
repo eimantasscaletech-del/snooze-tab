@@ -803,9 +803,11 @@ var formatPomodoroTime = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${
 // --- Pomodoro Panel (full tab) ---
 
 var POMO_DURATION = 25 * 60;
+var POMO_OPEN_TAB_DURATION = 24 * 60;
 var pomoPanel = {
 	taskId: null, taskText: '', seconds: POMO_DURATION,
-	running: false, interval: null, initialized: false
+	running: false, interval: null, initialized: false,
+	openTabOnFinish: false, finishTab: null
 };
 
 async function getPomoStats() {
@@ -822,6 +824,11 @@ async function initPomoPanel() {
 
 	document.getElementById('pomo-start-btn').addEventListener('click', pomoPanelToggle);
 	document.getElementById('pomo-reset-btn').addEventListener('click', pomoPanelReset);
+	document.getElementById('pomo-open-tab-on-finish').addEventListener('change', e => {
+		pomoPanel.openTabOnFinish = e.target.checked;
+		pomoPanel.finishTab = null;
+		if (!pomoPanel.running) pomoPanelReset();
+	});
 
 	document.getElementById('pomo-modal-done').addEventListener('click', _ => pomoPanelFinish('done'));
 	document.getElementById('pomo-modal-fail').addEventListener('click', _ => pomoPanelFinish('failed'));
@@ -839,6 +846,7 @@ async function initPomoPanel() {
 
 	await pomoPanelRefreshStats();
 	populatePomoPanelTasks();
+	pomoPanelReset();
 }
 
 async function pomoPanelFinish(result) {
@@ -856,19 +864,38 @@ async function pomoPanelRefreshStats() {
 	document.getElementById('pomo-stat-fail').textContent = `☠️ ${s.failed || 0}`;
 }
 
-function pomoPanelToggle() {
+function getPomoPanelDuration() {
+	return pomoPanel.openTabOnFinish ? POMO_OPEN_TAB_DURATION : POMO_DURATION;
+}
+
+async function rememberPomoFinishTab() {
+	if (!pomoPanel.openTabOnFinish || pomoPanel.finishTab) return;
+	var tab = await getTabsInWindow(true);
+	if (!tab || !tab.url || !isValid(tab)) return;
+	pomoPanel.finishTab = {url: tab.url, title: tab.title || tab.url};
+}
+
+function openPomoFinishTab() {
+	if (!pomoPanel.openTabOnFinish || !pomoPanel.finishTab || !pomoPanel.finishTab.url) return;
+	chrome.tabs.create({url: pomoPanel.finishTab.url, active: true});
+}
+
+async function pomoPanelToggle() {
 	if (pomoPanel.running) {
 		clearInterval(pomoPanel.interval);
 		pomoPanel.running = false;
 		document.getElementById('pomo-start-btn').textContent = 'Start';
+		document.getElementById('pomo-open-tab-on-finish').disabled = false;
 	} else {
 		if (!pomoPanel.taskId) {
 			document.getElementById('pomo-selected-task').style.color = '#DF4E76';
 			document.getElementById('pomo-selected-task').textContent = 'Pick a task first!';
 			return;
 		}
+		await rememberPomoFinishTab();
 		pomoPanel.running = true;
 		document.getElementById('pomo-start-btn').textContent = 'Pause';
+		document.getElementById('pomo-open-tab-on-finish').disabled = true;
 		var total = pomoPanel.seconds;
 		var circumference = 326.7;
 		pomoPanel.interval = setInterval(_ => {
@@ -889,8 +916,10 @@ function pomoPanelToggle() {
 function pomoPanelReset() {
 	clearInterval(pomoPanel.interval);
 	pomoPanel.running = false;
-	pomoPanel.seconds = POMO_DURATION;
+	pomoPanel.seconds = getPomoPanelDuration();
+	pomoPanel.finishTab = null;
 	document.getElementById('pomo-start-btn').textContent = 'Start';
+	document.getElementById('pomo-open-tab-on-finish').disabled = false;
 	document.getElementById('pomo-ring-fg').style.strokeDashoffset = 0;
 	pomoPanelUpdateDisplay();
 }
@@ -900,6 +929,7 @@ function pomoPanelUpdateDisplay() {
 }
 
 function pomoPanelOnFinish() {
+	openPomoFinishTab();
 	try { new Audio(chrome.runtime.getURL('sounds/appointed.mp3')).play(); } catch(e) {
 		// Audio is optional when the browser blocks autoplay.
 	}

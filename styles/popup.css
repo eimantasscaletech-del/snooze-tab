@@ -1259,6 +1259,28 @@ body.show-shortcuts .choice div, body.show-shortcuts .custom-choice div, body.sh
     position: absolute;
 }
 
+.pomo-open-tab-option {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #7b3f35;
+    margin-top: 1.65rem;
+    cursor: pointer;
+}
+
+.pomo-open-tab-option input {
+    accent-color: #DF4E76;
+    cursor: pointer;
+}
+
+.pomo-open-tab-option input:disabled,
+.pomo-open-tab-option input:disabled + span {
+    cursor: default;
+    opacity: .65;
+}
+
 .pomo-btns {
     display: flex;
     gap: .4rem;
